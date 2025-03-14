@@ -3,7 +3,7 @@ import axios from "axios";
 import * as cheerio from "cheerio";
 import { Book } from "@/app/models";
 
-export type ResponseData = {
+export type BookResponseData = {
     kind: "Success";
     book: Book;
 } | {
@@ -11,7 +11,7 @@ export type ResponseData = {
     message: string;
 };
 
-export default function handler(req: NextApiRequest, res: NextApiResponse<ResponseData>) {
+export default function handler(req: NextApiRequest, res: NextApiResponse<BookResponseData>) {
     const { bookId } = req.query;
 
     if (typeof bookId !== "string") {

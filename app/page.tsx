@@ -3,7 +3,8 @@
 import { Book } from "./models";
 import { useCallback, useState } from "react";
 import axios from "axios";
-import { ResponseData } from "@/pages/api/fetchbook/[bookId]";
+import { BookResponseData } from "@/pages/api/fetchbook/[bookId]";
+import { AnalysisResponseData } from "@/pages/api/generateanalysis";
 import { useLocalStorage } from "./useLocalStorage";
 
 type SelectedBookState = |
@@ -16,6 +17,7 @@ type SelectedBookState = |
 {
   kind: "SelectedBookLoaded",
   book: Book,
+  llmAnalysis: string | undefined;
 } |
 {
   kind: "Error",
@@ -33,14 +35,14 @@ export default function Home() {
     const savedBook = getSavedBook(Number(inputState));
 
     if (savedBook) {
-      setSelectedBookState({ kind: "SelectedBookLoaded", book: savedBook });
+      setSelectedBookState({ kind: "SelectedBookLoaded", book: savedBook, llmAnalysis: undefined });
     } else {
       // Book has not been saved yet. 
       const url = `/api/fetchbook/${inputState}`;
 
-      axios.get<ResponseData>(url).then((response) => {
+      axios.get<BookResponseData>(url).then((response) => {
         if (response.data.kind === "Success") {
-          setSelectedBookState({ kind: "SelectedBookLoaded", book: response.data.book });
+          setSelectedBookState({ kind: "SelectedBookLoaded", book: response.data.book, llmAnalysis: undefined });
           saveBook(Number(inputState), response.data.book);
         } else {
           setSelectedBookState({ kind: "Error", message: response.data.message });
@@ -52,13 +54,25 @@ export default function Home() {
 
   }, [inputState, getSavedBook, saveBook]);
 
+  const handleGenerateLlmAnalysis = useCallback(() => {
+    if (selectedBookState.kind === "SelectedBookLoaded" && !selectedBookState.llmAnalysis) {
+      const url = '/api/generateanalysis';
+
+      axios.post<AnalysisResponseData>(url, { text: selectedBookState.book.content }).then((response) => {
+        setSelectedBookState((prev) => ({ ...prev, llmAnalysis: response.data.analysis }));
+      }).catch((reason) => {
+        setSelectedBookState({ kind: "Error", message: JSON.stringify(reason) });
+      });
+    }
+  }, [selectedBookState]);
+
   return (
     <div className="w-[500px] mx-auto mt-[250px]">
-      <h1 className="text-5xl mb-4">Project Gutenberg Browser</h1>
+      <h1 className="text-6xl mb-4">Project Gutenberg Browser</h1>
       <SearchBar inputState={inputState} setInputState={setInputState} onClick={handleClickSearch} />
-      <h2 className="text-4xl mb-4">Saved Books: </h2>
+      <h2 className="text-3xl mb-4">Saved Books: </h2>
       {listSavedMetadata.length ? <RenderBookList listSavedMetadata={listSavedMetadata} onClearSavedBooks={clearAllBooks} /> : <div>No Saved Books yet!</div>}
-      <RenderBook selectedBookState={selectedBookState} />
+      <RenderBook selectedBookState={selectedBookState} onGenerateAnalysis={handleGenerateLlmAnalysis} />
     </div>
   );
 }
@@ -75,14 +89,28 @@ function SearchBar({ inputState, setInputState, onClick }: { inputState: string,
   );
 }
 
-function RenderBook({ selectedBookState }: { selectedBookState: SelectedBookState; }) {
+function RenderBook({ selectedBookState, onGenerateAnalysis }: { selectedBookState: SelectedBookState; onGenerateAnalysis: () => void; }) {
   if (selectedBookState.kind === "SelectedBookLoaded") {
     const book = selectedBookState.book;
     return (
       <div>
-        <div className="text-4xl">{book.metadata.title}</div>
-        <div className="text-3xl">{book.metadata.author}</div>
-        <div className="whitespace-pre-wrap">{selectedBookState.book.content}</div>
+        <div className="text-5xl">{book.metadata.title}</div>
+        <div className="text-3xl mb-2">{book.metadata.author}</div>
+        {selectedBookState.llmAnalysis
+          ? <>
+            <div className="text-2xl mb-2">LLM Analysis: </div>
+            <div className="whitespace-pre-wrap">{selectedBookState.llmAnalysis}</div>
+          </>
+          : <>
+            <button
+              className="mb-2 pl-1.5 pr-1.5 bg-gray-600"
+              onClick={onGenerateAnalysis}
+            >
+              Generate LLM Analysis
+            </button>
+            <div className="whitespace-pre-wrap">{selectedBookState.book.content}</div>
+          </>}
+
       </div>
     );
   } else if (selectedBookState.kind === "Loading") {
