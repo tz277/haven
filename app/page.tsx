@@ -114,7 +114,7 @@ export default function Home() {
   }, [selectedBookState]);
 
   return (
-    <div className="w-[7500px] mx-auto mt-[250px]">
+    <div className="w-[750px] mx-auto mt-[250px]">
 
       <h1 className="text-6xl mb-4">Project Gutenberg Browser</h1>
       <h2 className="text-2xl mb-4">By Timothy Zhu</h2>
