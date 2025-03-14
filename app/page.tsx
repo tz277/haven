@@ -66,13 +66,31 @@ export default function Home() {
     }
   }, [selectedBookState]);
 
+  const handleBackToContent = useCallback(() => {
+    if (selectedBookState.kind === "SelectedBookLoaded" && selectedBookState.llmAnalysis) {
+      setSelectedBookState((prev) => ({ ...prev, llmAnalysis: undefined }));
+    }
+  }, [selectedBookState]);
+
+  const handleExitBook = useCallback(() => {
+    if (selectedBookState.kind === "SelectedBookLoaded") {
+      setSelectedBookState({ kind: "NoneSelected" });
+      setInputState("");
+    }
+  }, [selectedBookState]);
+
   return (
     <div className="w-[500px] mx-auto mt-[250px]">
       <h1 className="text-6xl mb-4">Project Gutenberg Browser</h1>
       <SearchBar inputState={inputState} setInputState={setInputState} onClick={handleClickSearch} />
       <h2 className="text-3xl mb-4">Saved Books: </h2>
       {listSavedMetadata.length ? <RenderBookList listSavedMetadata={listSavedMetadata} onClearSavedBooks={clearAllBooks} /> : <div>No Saved Books yet!</div>}
-      <RenderBook selectedBookState={selectedBookState} onGenerateAnalysis={handleGenerateLlmAnalysis} />
+      <RenderBook
+        selectedBookState={selectedBookState}
+        onGenerateAnalysis={handleGenerateLlmAnalysis}
+        onBackToContent={handleBackToContent}
+        onExitBook={handleExitBook}
+      />
     </div>
   );
 }
@@ -89,7 +107,17 @@ function SearchBar({ inputState, setInputState, onClick }: { inputState: string,
   );
 }
 
-function RenderBook({ selectedBookState, onGenerateAnalysis }: { selectedBookState: SelectedBookState; onGenerateAnalysis: () => void; }) {
+function RenderBook({
+  selectedBookState,
+  onGenerateAnalysis,
+  onBackToContent,
+  onExitBook
+}: {
+  selectedBookState: SelectedBookState;
+  onGenerateAnalysis: () => void;
+  onBackToContent: () => void;
+  onExitBook: () => void;
+}) {
   if (selectedBookState.kind === "SelectedBookLoaded") {
     const book = selectedBookState.book;
     return (
@@ -98,15 +126,33 @@ function RenderBook({ selectedBookState, onGenerateAnalysis }: { selectedBookSta
         <div className="text-3xl mb-2">{book.metadata.author}</div>
         {selectedBookState.llmAnalysis
           ? <>
+            <button
+              className="mb-2 mr-2 pl-1.5 pr-1.5 bg-gray-600"
+              onClick={onBackToContent}
+            >
+              Back to Book Content
+            </button>
+            <button
+              className="mb-2 pl-1.5 pr-1.5 bg-gray-600"
+              onClick={onExitBook}
+            >
+              Exit Book
+            </button>
             <div className="text-2xl mb-2">LLM Analysis: </div>
             <div className="whitespace-pre-wrap">{selectedBookState.llmAnalysis}</div>
           </>
           : <>
             <button
-              className="mb-2 pl-1.5 pr-1.5 bg-gray-600"
+              className="mb-2 mr-2 pl-1.5 pr-1.5 bg-gray-600"
               onClick={onGenerateAnalysis}
             >
               Generate LLM Analysis
+            </button>
+            <button
+              className="mb-2 pl-1.5 pr-1.5 bg-gray-600"
+              onClick={onExitBook}
+            >
+              Exit Book
             </button>
             <div className="whitespace-pre-wrap">{selectedBookState.book.content}</div>
           </>}
