@@ -7,6 +7,13 @@ import { BookResponseData } from "@/pages/api/fetchbook/[bookId]";
 import { AnalysisResponseData } from "@/pages/api/generateanalysis";
 import { useLocalStorage } from "./useLocalStorage";
 
+/**
+ * The state of the page, wrt whether a book is selected or not. 
+ * 
+ * When a book is queried, it may be in a loading state before the book is loaded.
+ * 
+ * When a book is queried, an error may arise before the book is loaded. 
+ */
 type SelectedBookState = |
 {
   kind: "NoneSelected";
@@ -24,22 +31,40 @@ type SelectedBookState = |
   message: string,
 };
 
+/**
+ * The main controller component of the app. 
+ */
 export default function Home() {
+  /** State of the currently selected book (if one is selected or loading). */
   const [selectedBookState, setSelectedBookState] = useState<SelectedBookState>({ kind: "NoneSelected" });
-  const [inputState, setInputState] = useState<string>("");
-  const { listSavedMetadata, getSavedBook, saveBook, clearAllBooks } = useLocalStorage();
 
+  /** State of the Book ID input field. */
+  const [inputState, setInputState] = useState<string>("");
+
+  /** Handlers for persisting books to local storage, and reading them. */
+  const {
+    listSavedMetadata,    // List of all saved books (and their metadata)
+    getSavedBook,         // Gets the text of a saved book by ID. 
+    saveBook,             // Saves a book to local storage.
+    clearAllBooks         // Clears all books in local storage. 
+  } = useLocalStorage();
+
+  /**
+   * Hanlder for clicking the "Search" button after entering a book ID. 
+   */
   const handleClickSearch = useCallback(() => {
     setSelectedBookState({ kind: "Loading" });
 
     const savedBook = getSavedBook(Number(inputState));
 
     if (savedBook) {
+      // No need to fetch book if the desired book is already saved. 
       setSelectedBookState({ kind: "SelectedBookLoaded", book: savedBook, llmAnalysis: undefined });
     } else {
       // Book has not been saved yet. 
       const url = `/api/fetchbook/${inputState}`;
 
+      // If book is successfully fetched, adjust the page state with the book. (And save it to local storage.)
       axios.get<BookResponseData>(url).then((response) => {
         if (response.data.kind === "Success") {
           setSelectedBookState({ kind: "SelectedBookLoaded", book: response.data.book, llmAnalysis: undefined });
@@ -54,6 +79,9 @@ export default function Home() {
 
   }, [inputState, getSavedBook, saveBook]);
 
+  /** 
+   * Handler for the "Generate LLM Analaysis" Button. Fetches a dynamic llm analysis via Groq and renders it. 
+   */
   const handleGenerateLlmAnalysis = useCallback(() => {
     if (selectedBookState.kind === "SelectedBookLoaded" && !selectedBookState.llmAnalysis) {
       const url = '/api/generateanalysis';
@@ -66,12 +94,18 @@ export default function Home() {
     }
   }, [selectedBookState]);
 
+  /** 
+   * If currently viewing the LLM analaysis, offers a way to go back to the book content. 
+   */
   const handleBackToContent = useCallback(() => {
     if (selectedBookState.kind === "SelectedBookLoaded" && selectedBookState.llmAnalysis) {
       setSelectedBookState((prev) => ({ ...prev, llmAnalysis: undefined }));
     }
   }, [selectedBookState]);
 
+  /** 
+   * If currently viewing a book (content or llm analysis), offers a way to exit the book.
+   */
   const handleExitBook = useCallback(() => {
     if (selectedBookState.kind === "SelectedBookLoaded") {
       setSelectedBookState({ kind: "NoneSelected" });
@@ -80,11 +114,16 @@ export default function Home() {
   }, [selectedBookState]);
 
   return (
-    <div className="w-[500px] mx-auto mt-[250px]">
+    <div className="w-[7500px] mx-auto mt-[250px]">
+
       <h1 className="text-6xl mb-4">Project Gutenberg Browser</h1>
+      <h2 className="text-2xl mb-4">By Timothy Zhu</h2>
+
       <SearchBar inputState={inputState} setInputState={setInputState} onClick={handleClickSearch} />
+
       <h2 className="text-3xl mb-4">Saved Books: </h2>
-      {listSavedMetadata.length ? <RenderBookList listSavedMetadata={listSavedMetadata} onClearSavedBooks={clearAllBooks} /> : <div>No Saved Books yet!</div>}
+      {listSavedMetadata.length ? <RenderSavedBookList listSavedMetadata={listSavedMetadata} onClearSavedBooks={clearAllBooks} /> : <div>No Saved Books yet!</div>}
+
       <RenderBook
         selectedBookState={selectedBookState}
         onGenerateAnalysis={handleGenerateLlmAnalysis}
@@ -168,7 +207,7 @@ function RenderBook({
   }
 }
 
-function RenderBookList({ listSavedMetadata, onClearSavedBooks }: { listSavedMetadata: { bookId: number, metadata: Book["metadata"]; }[]; onClearSavedBooks: () => void; }) {
+function RenderSavedBookList({ listSavedMetadata, onClearSavedBooks }: { listSavedMetadata: { bookId: number, metadata: Book["metadata"]; }[]; onClearSavedBooks: () => void; }) {
   return (
     <div className="mb-4">
       <button

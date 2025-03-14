@@ -8,6 +8,13 @@ export type AnalysisResponseData = {
     analysis: string;
 };
 
+/** 
+ * Backend API endpoint to generate a plot summary via Groq and return it. 
+ * 
+ * Route: /api/generateanalysis
+ * 
+ * Requries: request body contains a "text" field with the desired text to summarize. 
+ */
 export default async function handler(req: NextApiRequest, res: NextApiResponse<AnalysisResponseData>) {
     const { text } = req.body;
 

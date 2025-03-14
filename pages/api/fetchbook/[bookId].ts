@@ -11,6 +11,13 @@ export type BookResponseData = {
     message: string;
 };
 
+/** 
+ * Backend API Endpoint to fetch a book id from Project Gutenberg's website.
+ * 
+ * Route: /api/fetchbook/<bookId> 
+ * 
+ * Requires: the query be a valid integer book id. 
+ */
 export default function handler(req: NextApiRequest, res: NextApiResponse<BookResponseData>) {
     const { bookId } = req.query;
 
@@ -33,6 +40,10 @@ export default function handler(req: NextApiRequest, res: NextApiResponse<BookRe
     });
 }
 
+/** 
+ * Given a well-formed integer, fetch the contents and metadata of the book id from
+ * project guttenberg and return it as a Book object. 
+ */
 async function fetchBook(bookId: number): Promise<Book> {
     const content_url = `https://www.gutenberg.org/files/${bookId}/${bookId}-0.txt`;
     const content_response = await axios.get<string>(content_url);
@@ -48,6 +59,10 @@ async function fetchBook(bookId: number): Promise<Book> {
     };
 }
 
+/** 
+ * Given the HTML response from a Project Guttenberg metadata page, parse the 
+ * markup for the desired metadate (Author and Title) and return it. 
+ */
 function parseMetadataResponse(metadataResponseHTML: string): Book["metadata"] {
     const $ = cheerio.load(metadataResponseHTML);
 
