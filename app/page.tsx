@@ -23,7 +23,7 @@ export default function Home() {
 
   return (
     <div className="w-[500px] mx-auto mt-[250px]">
-      <h1 className="text-4xl mb-4">Hello World!</h1>
+      <h1 className="text-4xl mb-4">Project Gutenberg Browser</h1>
       <SearchBar inputState={inputState} setInputState={setInputState} onClick={() => handleClickSearch(inputState, setSelectedBookState)} />
       <RenderBook selectedBookState={selectedBookState} />
     </div>
@@ -44,7 +44,14 @@ function SearchBar({ inputState, setInputState, onClick }: { inputState: string,
 
 function RenderBook({ selectedBookState }: { selectedBookState: SelectedBookState; }) {
   if (selectedBookState.kind === "SelectedBookLoaded") {
-    return <div>Content: {selectedBookState.book.content}</div>;
+    const book = selectedBookState.book;
+    return (
+      <div>
+        <div className="text-3xl">{book.metadata.title}</div>
+        <div className="text-2xl">{book.metadata.author}</div>
+        Content: {selectedBookState.book.content}
+      </div>
+    );
   }
 
   return <div>{JSON.stringify(selectedBookState)}</div>;
