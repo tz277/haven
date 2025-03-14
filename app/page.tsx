@@ -5,14 +5,18 @@ import { useState } from "react";
 import axios from "axios";
 import { ResponseData } from "@/pages/api/fetchbook/[bookId]";
 
-type SelectedBookState = {
+type SelectedBookState = |
+{
   kind: "NoneSelected";
-} | {
+} |
+{
   kind: "Loading";
-} | {
+} |
+{
   kind: "SelectedBookLoaded",
   book: Book,
-} | {
+} |
+{
   kind: "Error",
   message: string,
 };
@@ -49,7 +53,7 @@ function RenderBook({ selectedBookState }: { selectedBookState: SelectedBookStat
       <div>
         <div className="text-3xl">{book.metadata.title}</div>
         <div className="text-2xl">{book.metadata.author}</div>
-        Content: {selectedBookState.book.content}
+        <div className="whitespace-pre-wrap">{selectedBookState.book.content}</div>
       </div>
     );
   }

@@ -36,10 +36,10 @@ export default function handler(req: NextApiRequest, res: NextApiResponse<Respon
 async function fetchBook(bookId: number): Promise<Book> {
     const content_url = `https://www.gutenberg.org/files/${bookId}/${bookId}-0.txt`;
     const content_response = await axios.get<string>(content_url);
-    const content = content_response.data.substring(0, 200);
+    const content = content_response.data;
 
     const metadata_url = `https://www.gutenberg.org/ebooks/${bookId}`;
-    const metadata_response = await axios.get(metadata_url);
+    const metadata_response = await axios.get<string>(metadata_url);
     const metadata = parseMetadataResponse(metadata_response.data);
 
     return {
